@@ -6,73 +6,110 @@ import tempfile
 import posix
 import shutil
 import sys
+import re
 
 
 class vman():
-    def __init__(self, mandir, page, manpages):
+    '''
+    vman class
+    Main class for opening up man pages in vim.
+    Creates a directory structure like so::
+        mandir/
+               user/
+                    tmp-something/
+                                  manpage1
+                                  manpage2
+                                  ...
+    Each user gets their own directory in the mandir that only they can work
+    with. (700 access on the tmp-something directories)
+
+    To run this as a script you can call vman.main() which will run all of the
+    included functions in the correct order, along with cleanup if an exception
+    occurs.
+    '''
+    def __init__(self, mandir, manpages):
+        '''
+        Arguments:
+            mandir (str) -- Directory to store temporary man pages
+            manpages (list) -- Manuals to display
+        '''
         self.mandir = mandir
-        self.page = None
-        if page:
-            self.page = page
         self.manpages = manpages
 
         self.userid = posix.geteuid()
+        self.catcmd = ['man', '--pager=cat']
 
     def mkdirs(self):
+        '''
+        Makes temporary directories. Returns the name of the temporary
+        directory
+        '''
+        os.makedirs('{}/{}'.format(self.mandir, self.userid),
+                    exist_ok=True,
+                    mode=0o700)
         self.tempdir = tempfile.mkdtemp(prefix='tmp-',
                                         dir='{}/{}'.format(self.mandir,
                                                            self.userid))
         return self.tempdir
 
-    def _getmanpath(self, manpage, page=None):
-        cmd = ['man', '-w', manpage]
-        if page:
-            cmd.insert(2, page)
-        return os.path.split(subprocess.check_output(cmd,
-                                                     universal_newlines=True))
+    def _getmanpaths(self, manpages):
+        cmd = ['man', '-w']
+        cmd.extend(manpages)
+        sp = subprocess.check_output(cmd, universal_newlines=True)
+        spl = sp.splitlines()
+        return map(os.path.split, spl)
 
-    def writemans(self):
+    def _writeman(self, mp):
+        manfile = os.path.join(mp[0], mp[1])
+        temp = os.path.join(self.tempdir,
+                            re.sub(r'\.(gz|bz2|lzo|zip|xz)$', '', mp[1]))
+        cmd = self.catcmd.copy()
+        cmd.append(manfile)
+        raw = subprocess.check_output(cmd, env={'MANWIDTH': '77'},
+                                      stderr=subprocess.DEVNULL)
+        with open(temp, 'wb') as tf:
+            tf.write(raw)
+        return temp
+
+    def writemans(self, mps):
+        '''
+        Writes manfiles to the temporary directory.
+        '''
         self.manfiles = []
-        for m in self.manpages:
-            p = self._getmanpath(m, self.page)
-            manfile = p[1].split('.')
-            manfile = '.'.join(manfile[:-1])
-            cmd = ['man', '--pager=cat', m]
-            if self.page:
-                cmd.insert(2, self.page)
-            rawman = subprocess.check_output(cmd, env={'MANWIDTH': '77'},
-                                             stderr=subprocess.DEVNULL)
-            with open('{}/{}'.format(self.tempdir, manfile), 'wb') as fm:
-                fm.write(rawman)
-            self.manfiles.append(manfile)
+        for m in mps:
+            self.manfiles.append(self._writeman(m))
         return self.manfiles
 
     def openmans(self):
+        '''
+        Opens manpages specified in the self.manfiles list.
+        '''
         cmd = ['vim', '-n', '-f', '-M']
-        manfiles = ['{}/{}'.format(self.tempdir, x) for x in self.manfiles]
-        cmd.extend(manfiles)
+        cmd.extend(self.manfiles)
         subprocess.call(cmd)
 
     def cleanup(self):
+        '''
+        Removes the temporary directory and files.
+        '''
         shutil.rmtree(self.tempdir)
 
     def main(self):
+        '''
+        Run all of the above in the correct order with cleanup and everything.
+        '''
         try:
             self.mkdirs()
-            self.writemans()
+            mps = self._getmanpaths(self.manpages)
+            self.writemans(mps)
             self.openmans()
+            self.cleanup()
         except Exception as e:
             print(e)
-            #self.cleanup()
+            self.cleanup()
 
 
 if __name__ == '__main__':
     args = sys.argv[1:]
-    if args[0] in range(0, 10):
-        page = args[0]
-        mans = args[1:]
-    else:
-        page = None
-        mans = args
-    v = vman('/tmp/manpages', page, mans)
+    v = vman('/tmp/manpages', args)
     v.main()
