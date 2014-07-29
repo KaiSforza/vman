@@ -42,14 +42,14 @@ class vman():
     def mkdirs(self):
         '''
         Makes temporary directories. Returns the name of the temporary
-        directory
+        directory. Sets the user's directory to 700 if it created the directory
+        or chmods the directory to 700 if it exists. The tempfile.mkdtemp()
+        function will create a directory with 700 permissions.
         '''
-        os.makedirs('{}/{}'.format(self.mandir, self.userid),
-                    exist_ok=True,
-                    mode=0o700)
-        self.tempdir = tempfile.mkdtemp(prefix='tmp-',
-                                        dir='{}/{}'.format(self.mandir,
-                                                           self.userid))
+        d = '{}/{}'.format(self.mandir, self.userid)
+        os.makedirs(d, exist_ok=True, mode=0o700)
+        os.chmod(d, 0o700)
+        self.tempdir = tempfile.mkdtemp(prefix='tmp-', dir=d)
         return self.tempdir
 
     def _getmanpaths(self, manpages):
