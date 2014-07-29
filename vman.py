@@ -37,7 +37,14 @@ class vman():
         self.manpages = manpages
 
         self.userid = posix.geteuid()
-        self.catcmd = ['man', '--pager=cat']
+
+        # Command bits. Allows changing the man command or vim command and
+        # their arguments.
+        self.man = 'man'
+        self.vim = 'vim'
+        self.manfnd = [self.man, '-w']
+        self.catcmd = [self.man, '--pager=cat']
+        self.vimcmd = [self.vim, '-n', '-f', '-M']
 
     def mkdirs(self):
         '''
@@ -53,7 +60,7 @@ class vman():
         return self.tempdir
 
     def _getmanpaths(self, manpages):
-        cmd = ['man', '-w']
+        cmd = self.manfnd.copy()
         cmd.extend(manpages)
         sp = subprocess.check_output(cmd, universal_newlines=True)
         spl = sp.splitlines()
@@ -84,7 +91,7 @@ class vman():
         '''
         Opens manpages specified in the self.manfiles list.
         '''
-        cmd = ['vim', '-n', '-f', '-M']
+        cmd = self.vimcmd.copy()
         cmd.extend(self.manfiles)
         subprocess.call(cmd)
 
