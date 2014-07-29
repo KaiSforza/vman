@@ -5,8 +5,8 @@ import subprocess
 import tempfile
 import posix
 import shutil
-import sys
 import re
+import argparse
 
 
 class vman():
@@ -110,6 +110,10 @@ class vman():
 
 
 if __name__ == '__main__':
-    args = sys.argv[1:]
-    v = vman('/tmp/manpages', args)
+    parser = argparse.ArgumentParser(
+        usage='%(prog)s [page] manpage [manpage2 [...]]',
+        description='Python utility to open manual pages in vim.')
+    parser.add_argument('manpage', nargs='*', help='Man pages to view')
+    args = parser.parse_args()
+    v = vman('/tmp/manpages', args.manpage)
     v.main()
