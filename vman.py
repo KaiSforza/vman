@@ -44,7 +44,14 @@ class vman():
         self.vim = 'vim'
         self.manfnd = [self.man, '-w']
         self.catcmd = [self.man, '--pager=cat']
-        self.vimcmd = [self.vim, '-n', '-f', '-M']
+
+        # Sets some basic vim options:
+        # - nonumber: removes numbering regardless of the setting in vimrc
+        # - laststatus=2: always show the status bar information
+        # - hidden: allow switching buffers without closing them
+        # - ft=man: make vim use the man-style highlighting
+        self.vimcmd = [self.vim, '-n', '-f', '-M',
+                       '-c', 'set nonumber laststatus=2 hidden ft=man']
 
     def mkdirs(self):
         '''
