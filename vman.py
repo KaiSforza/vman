@@ -7,6 +7,7 @@ import posix
 import shutil
 import re
 import argparse
+from multiprocessing import Pool
 
 
 class vman():
@@ -38,6 +39,7 @@ class vman():
 
         self.userid = posix.geteuid()
 
+        self.manfiles = list()
         # Command bits. Allows changing the man command or vim command and
         # their arguments.
         self.man = 'man'
@@ -88,9 +90,8 @@ class vman():
         '''
         Writes manfiles to the temporary directory.
         '''
-        self.manfiles = []
-        for m in mps:
-            self.manfiles.append(self._writeman(m))
+        with Pool(posix.cpu_count()) as p:
+            self.manfiles = p.map(self._writeman, mps)
         return self.manfiles
 
     def openmans(self):
