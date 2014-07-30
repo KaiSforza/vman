@@ -118,8 +118,7 @@ class vman():
             self.writemans(mps)
             self.openmans()
             self.cleanup()
-        except Exception as e:
-            print(e)
+        except:
             self.cleanup()
 
 
