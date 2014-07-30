@@ -94,7 +94,8 @@ class vman():
 
     def writemans(self, mps):
         '''
-        Writes manfiles to the temporary directory.
+        Writes manfiles to the temporary directory. Will do this in parallel
+        if possible.
         '''
         with Pool(posix.cpu_count()) as p:
             self.manfiles = p.map(self._writeman, mps)
