@@ -79,10 +79,9 @@ class vman():
                             re.sub(r'\.(gz|bz2|lzo|zip|xz)$', '', mp[1]))
         cmd = self.catcmd.copy()
         cmd.append(manfile)
-        raw = subprocess.check_output(cmd, env={'MANWIDTH': '77'},
-                                      stderr=subprocess.DEVNULL)
         with open(temp, 'wb') as tf:
-            tf.write(raw)
+            tf.write(subprocess.check_output(cmd, env={'MANWIDTH': '77'},
+                                             stderr=subprocess.DEVNULL))
         return temp
 
     def writemans(self, mps):
