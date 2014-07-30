@@ -43,7 +43,7 @@ class vman():
         self.man = 'man'
         self.vim = 'vim'
         self.manfnd = [self.man, '-w']
-        self.catcmd = [self.man, '--pager=cat']
+        self.catcmd = [self.man, '--encoding=UTF-8', '--pager=cat']
 
         # Sets some basic vim options:
         # - nonumber: removes numbering regardless of the setting in vimrc
