@@ -28,7 +28,7 @@ class vman():
     included functions in the correct order, along with cleanup if an exception
     occurs.
     '''
-    def __init__(self, mandir, manpages):
+    def __init__(self, mandir, manpages, manoptions=None, vimoptions=None):
         '''
         Arguments:
             mandir (str) -- Directory to store temporary man pages
@@ -45,6 +45,8 @@ class vman():
         self.man = 'man'
         self.vim = 'vim'
         self.manfnd = [self.man, '-w']
+        if manoptions:
+            self.manfnd.extend(manoptions)
         self.catcmd = [self.man, '--encoding=UTF-8', '--pager=cat']
 
         # Sets some basic vim options:
@@ -52,8 +54,12 @@ class vman():
         # - laststatus=2: always show the status bar information
         # - hidden: allow switching buffers without closing them
         # - ft=man: make vim use the man-style highlighting
-        self.vimcmd = [self.vim, '-n', '-f', '-M',
-                       '-c', 'set nonumber laststatus=2 hidden ft=man']
+        self.vimcmd = [self.vim, '-n', '-f', '-M']
+        if vimoptions:
+            self.vimcmd.extend(vimoptions)
+        else:
+            self.vimcmd.extend(
+                ['-c', 'set nonumber laststatus=2 hidden ft=man'])
 
     def mkdirs(self):
         '''
@@ -127,6 +133,11 @@ if __name__ == '__main__':
         usage='%(prog)s [page] manpage [manpage2 [...]]',
         description='Python utility to open manual pages in vim.')
     parser.add_argument('manpage', nargs='+', help='Man pages to view')
+    parser.add_argument('--regex', action='count',
+                        help='Get all pages matching the expression')
     args = parser.parse_args()
-    v = vman('/tmp/manpages', args.manpage)
+    ma = []
+    if args.regex:
+        ma = ['--regex']
+    v = vman('/tmp/manpages', args.manpage, manoptions=ma)
     v.main()
