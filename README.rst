@@ -8,7 +8,8 @@ wanted it to be easier to work with and do some other things. Meet vman.py.
 
 Help
 ====
-::
+Output::
+
   usage: vman.py [page] manpage [manpage2 [...]]
 
   Python utility to open manual pages in vim.
@@ -18,6 +19,7 @@ Help
 
   optional arguments:
     -h, --help  show this help message and exit
+    --regex     Get all pages matching the expression
 
 For bug reports or pull requests, please use the github_ page.
 
