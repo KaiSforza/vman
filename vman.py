@@ -34,12 +34,13 @@ class vman():
             mandir (str) -- Directory to store temporary man pages
             manpages (list) -- Manuals to display
         '''
-        self.mandir = mandir
+        # Grab the list of man pages passed to vman() and set it to a class
+        # variable.
         self.manpages = manpages
 
-        self.userid = posix.geteuid()
+        # Set up the main directory to use
+        self.d = '{}/{}'.format(mandir, posix.getuid())
 
-        self.manfiles = list()
         # Command bits. Allows changing the man command or vim command and
         # their arguments.
         self.man = 'man'
@@ -61,21 +62,23 @@ class vman():
             self.vimcmd.extend(
                 ['-c', 'set nonumber laststatus=2 hidden ft=man'])
 
-    def mkdirs(self):
+    def mkdirs(self, d):
         '''
         Makes temporary directories. Returns the name of the temporary
         directory. Sets the user's directory to 700 if it created the directory
         or chmods the directory to 700 if it exists. The tempfile.mkdtemp()
         function will create a directory with 700 permissions.
+
+        Returns the temporary directory and also sets the self.tempdir variable
+        to the location of the temporary directory.
         '''
-        d = '{}/{}'.format(self.mandir, self.userid)
         os.makedirs(d, exist_ok=True, mode=0o700)
         os.chmod(d, 0o700)
         self.tempdir = tempfile.mkdtemp(prefix='tmp-', dir=d)
         return self.tempdir
 
-    def _getmanpaths(self, manpages):
-        cmd = self.manfnd.copy()
+    def _getmanpaths(self, manpages, manfind):
+        cmd = manfind.copy()
         cmd.extend(manpages)
         sp = subprocess.check_output(cmd, universal_newlines=True)
         spl = sp.splitlines()
@@ -101,32 +104,33 @@ class vman():
             self.manfiles = p.map(self._writeman, mps)
         return self.manfiles
 
-    def openmans(self):
+    def openmans(self, mfiles, vimcmd):
         '''
         Opens manpages specified in the self.manfiles list.
         '''
-        cmd = self.vimcmd.copy()
-        cmd.extend(self.manfiles)
+        cmd = vimcmd.copy()
+        cmd.extend(mfiles)
         subprocess.call(cmd)
 
-    def cleanup(self):
+    def cleanup(self, d):
         '''
         Removes the temporary directory and files.
         '''
-        shutil.rmtree(self.tempdir)
+        shutil.rmtree(d, ignore_errors=True)
 
     def main(self):
         '''
-        Run all of the above in the correct order with cleanup and everything.
+        Run all of the above in the correct order with cleanup and everything
+        using the options set in vman.
         '''
         try:
-            self.mkdirs()
-            mps = self._getmanpaths(self.manpages)
+            self.mkdirs(self.d)
+            mps = self._getmanpaths(self.manpages, self.manfnd)
             self.writemans(mps)
-            self.openmans()
-            self.cleanup()
+            self.openmans(self.manfiles, self.vimcmd)
+            self.cleanup(self.d)
         except:
-            self.cleanup()
+            self.cleanup(self.d)
 
 
 if __name__ == '__main__':
